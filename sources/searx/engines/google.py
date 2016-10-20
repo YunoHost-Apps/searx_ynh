@@ -24,6 +24,7 @@ categories = ['general']
 paging = True
 language_support = True
 use_locale_domain = True
+time_range_support = True
 
 # based on https://en.wikipedia.org/wiki/List_of_Google_domains and tests
 default_hostname = 'www.google.com'
@@ -91,6 +92,11 @@ search_path = '/search'
 search_url = ('https://{hostname}' +
               search_path +
               '?{query}&start={offset}&gws_rd=cr&gbv=1&lr={lang}&ei=x')
+
+time_range_search = "&tbs=qdr:{range}"
+time_range_dict = {'day': 'd',
+                   'week': 'w',
+                   'month': 'm'}
 
 # other URLs
 map_hostname_start = 'maps.google.'
@@ -179,6 +185,8 @@ def request(query, params):
                                       query=urlencode({'q': query}),
                                       hostname=google_hostname,
                                       lang=url_lang)
+    if params['time_range'] in time_range_dict:
+        params['url'] += time_range_search.format(range=time_range_dict[params['time_range']])
 
     params['headers']['Accept-Language'] = language
     params['headers']['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
@@ -300,9 +308,9 @@ def parse_map_detail(parsed_url, result, google_hostname):
     results = []
 
     # try to parse the geoloc
-    m = re.search('@([0-9\.]+),([0-9\.]+),([0-9]+)', parsed_url.path)
+    m = re.search(r'@([0-9\.]+),([0-9\.]+),([0-9]+)', parsed_url.path)
     if m is None:
-        m = re.search('ll\=([0-9\.]+),([0-9\.]+)\&z\=([0-9]+)', parsed_url.query)
+        m = re.search(r'll\=([0-9\.]+),([0-9\.]+)\&z\=([0-9]+)', parsed_url.query)
 
     if m is not None:
         # geoloc found (ignored)

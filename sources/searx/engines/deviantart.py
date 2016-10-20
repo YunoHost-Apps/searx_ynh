@@ -13,7 +13,6 @@
 """
 
 from urllib import urlencode
-from urlparse import urljoin
 from lxml import html
 import re
 from searx.engines.xpath import extract_text
@@ -21,10 +20,16 @@ from searx.engines.xpath import extract_text
 # engine dependent config
 categories = ['images']
 paging = True
+time_range_support = True
 
 # search-url
 base_url = 'https://www.deviantart.com/'
 search_url = base_url + 'browse/all/?offset={offset}&{query}'
+time_range_url = '&order={range}'
+
+time_range_dict = {'day': 11,
+                   'week': 14,
+                   'month': 15}
 
 
 # do search-request
@@ -33,6 +38,8 @@ def request(query, params):
 
     params['url'] = search_url.format(offset=offset,
                                       query=urlencode({'q': query}))
+    if params['time_range'] in time_range_dict:
+        params['url'] += time_range_url.format(range=time_range_dict[params['time_range']])
 
     return params
 
@@ -47,14 +54,13 @@ def response(resp):
 
     dom = html.fromstring(resp.text)
 
-    regex = re.compile('\/200H\/')
+    regex = re.compile(r'\/200H\/')
 
     # parse results
-    for result in dom.xpath('//div[contains(@class, "tt-a tt-fh")]'):
-        link = result.xpath('.//a[contains(@class, "thumb")]')[0]
-        url = urljoin(base_url, link.attrib.get('href'))
-        title_links = result.xpath('.//span[@class="details"]//a[contains(@class, "t")]')
-        title = extract_text(title_links[0])
+    for result in dom.xpath('.//span[@class="thumb wide"]'):
+        link = result.xpath('.//a[@class="torpedo-thumb-link"]')[0]
+        url = link.attrib.get('href')
+        title = extract_text(result.xpath('.//span[@class="title"]'))
         thumbnail_src = link.xpath('.//img')[0].attrib.get('src')
         img_src = regex.sub('/', thumbnail_src)
 
