@@ -48,7 +48,7 @@ from flask import (
     Flask, request, render_template, url_for, Response, make_response,
     redirect, send_from_directory
 )
-from flask.ext.babel import Babel, gettext, format_date, format_decimal
+from flask_babel import Babel, gettext, format_date, format_decimal
 from flask.json import jsonify
 from searx import settings, searx_dir
 from searx.engines import (
@@ -320,6 +320,8 @@ def render(template_name, override_theme=None, **kwargs):
 
     kwargs['instance_name'] = settings['general']['instance_name']
 
+    kwargs['results_on_new_tab'] = request.preferences.get_value('results_on_new_tab')
+
     kwargs['scripts'] = set()
     for plugin in request.user_plugins:
         for script in plugin.js_dependencies:
@@ -338,7 +340,11 @@ def render(template_name, override_theme=None, **kwargs):
 def pre_request():
     # merge GET, POST vars
     preferences = Preferences(themes, categories.keys(), engines, plugins)
-    preferences.parse_cookies(request.cookies)
+    try:
+        preferences.parse_cookies(request.cookies)
+    except:
+        # TODO throw error message to the user
+        logger.warning('Invalid config')
     request.preferences = preferences
 
     request.form = dict(request.form.items())
@@ -380,18 +386,18 @@ def index():
 
     plugins.call('post_search', request, locals())
 
-    for result in search.result_container.get_ordered_results():
+    results = search.result_container.get_ordered_results()
+
+    for result in results:
 
         plugins.call('on_result', request, locals())
         if not search.paging and engines[result['engine']].paging:
             search.paging = True
 
         if search.request_data.get('format', 'html') == 'html':
-            if 'content' in result:
-                result['content'] = highlight_content(result['content'],
-                                                      search.query.encode('utf-8'))  # noqa
-            result['title'] = highlight_content(result['title'],
-                                                search.query.encode('utf-8'))
+            if 'content' in result and result['content']:
+                result['content'] = highlight_content(result['content'][:1024], search.query.encode('utf-8'))
+            result['title'] = highlight_content(result['title'], search.query.encode('utf-8'))
         else:
             if result.get('content'):
                 result['content'] = html_to_text(result['content']).strip()
@@ -418,16 +424,20 @@ def index():
                 else:
                     result['publishedDate'] = format_date(result['publishedDate'])
 
+    number_of_results = search.result_container.results_number()
+    if number_of_results < search.result_container.results_length():
+        number_of_results = 0
+
     if search.request_data.get('format') == 'json':
         return Response(json.dumps({'query': search.query,
-                                    'number_of_results': search.result_container.number_of_results,
-                                    'results': search.result_container.get_ordered_results()}),
+                                    'number_of_results': number_of_results,
+                                    'results': results}),
                         mimetype='application/json')
     elif search.request_data.get('format') == 'csv':
         csv = UnicodeWriter(cStringIO.StringIO())
         keys = ('title', 'url', 'content', 'host', 'engine', 'score')
         csv.writerow(keys)
-        for row in search.result_container.get_ordered_results():
+        for row in results:
             row['host'] = row['parsed_url'].netloc
             csv.writerow([row.get(key, '') for key in keys])
         csv.stream.seek(0)
@@ -438,21 +448,23 @@ def index():
     elif search.request_data.get('format') == 'rss':
         response_rss = render(
             'opensearch_response_rss.xml',
-            results=search.result_container.get_ordered_results(),
+            results=results,
             q=search.request_data['q'],
-            number_of_results=search.result_container.number_of_results,
+            number_of_results=number_of_results,
             base_url=get_base_url()
         )
         return Response(response_rss, mimetype='text/xml')
 
     return render(
         'results.html',
-        results=search.result_container.get_ordered_results(),
+        results=results,
         q=search.request_data['q'],
         selected_categories=search.categories,
         paging=search.paging,
-        number_of_results=format_decimal(search.result_container.number_of_results),
+        number_of_results=format_decimal(number_of_results),
         pageno=search.pageno,
+        advanced_search=search.is_advanced,
+        time_range=search.time_range,
         base_url=get_base_url(),
         suggestions=search.result_container.suggestions,
         answers=search.result_container.answers,
@@ -693,6 +705,7 @@ def config():
     return jsonify({'categories': categories.keys(),
                     'engines': [{'name': engine_name,
                                  'categories': engine.categories,
+                                 'shortcut': engine.shortcut,
                                  'enabled': not engine.disabled}
                                 for engine_name, engine in engines.items()],
                     'plugins': [{'name': plugin.name,
@@ -706,12 +719,18 @@ def config():
                     'default_theme': settings['ui']['default_theme']})
 
 
+@app.errorhandler(404)
+def page_not_found(e):
+    return render('404.html')
+
+
 def run():
     app.run(
         debug=settings['general']['debug'],
         use_debugger=settings['general']['debug'],
         port=settings['server']['port'],
-        host=settings['server']['bind_address']
+        host=settings['server']['bind_address'],
+        threaded=True
     )
 
 
@@ -734,6 +753,7 @@ class ReverseProxyPathFix(object):
 
     :param app: the WSGI application
     '''
+
     def __init__(self, app):
         self.app = app
 

@@ -21,7 +21,7 @@ from lxml import etree
 from os import listdir, environ
 from os.path import isfile, isdir, join
 from searx.plugins import logger
-from flask.ext.babel import gettext
+from flask_babel import gettext
 from searx import searx_dir
 
 
@@ -87,7 +87,7 @@ def load_single_https_ruleset(rules_path):
 
             # convert host-rule to valid regex
             host = ruleset.attrib.get('host')\
-                .replace('.', '\.').replace('*', '.*')
+                .replace('.', r'\.').replace('*', '.*')
 
             # append to host list
             hosts.append(host)

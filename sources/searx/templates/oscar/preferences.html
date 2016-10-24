@@ -36,7 +36,7 @@
                         <label class="col-sm-3 col-md-2">{{ _('Default categories') }}</label>
                         {% else %}
                         <label class="col-sm-3 col-md-2">{{ _('Default categories') }}</label>
-                        <div class="col-sm-11 col-md-10">
+                        <div class="col-sm-11 col-md-10 search-categories">
                             {% include 'oscar/categories.html' %}
                         </div>
                         {% endif %}
@@ -117,6 +117,15 @@
                             <option value="pointhi" {% if cookies['oscar-style'] == 'pointhi' %}selected="selected"{% endif %}>Pointhi</option>
                         </select>
                     {{ preferences_item_footer(_('Choose style for this theme'), _('Style'), rtl) }}
+
+                    {% set label = _('Results on new tabs') %}
+                    {% set info = _('Open result links on new browser tabs') %}
+                    {{ preferences_item_header(info, label, rtl) }}
+                        <select class="form-control" name='results_on_new_tab'>
+                            <option value="1" {% if results_on_new_tab %}selected="selected"{% endif %}>{{ _('On') }}</option>
+                            <option value="0" {% if not results_on_new_tab %}selected="selected"{% endif %}>{{ _('Off')}}</option>
+                        </select>
+                    {{ preferences_item_footer(info, label, rtl) }}
                 </div>
                 </fieldset>
             </div>
@@ -164,7 +173,9 @@
                             {% if not search_engine.private %}
                                 <tr>
                                     {% if not rtl %}
-                                    <td>{{ checkbox_toggle('engine_' + search_engine.name|replace(' ', '_') + '__' + categ|replace(' ', '_'), (search_engine.name, categ) in disabled_engines) }}</td>
+                                    <td class="onoff-checkbox">
+                                        {{ checkbox_toggle('engine_' + search_engine.name|replace(' ', '_') + '__' + categ|replace(' ', '_'), (search_engine.name, categ) in disabled_engines) }}
+                                    </td>
                                     <th>{{ search_engine.name }}</th>
 				    <td>{{ shortcuts[search_engine.name] }}</td>
 				    <td><input type="checkbox" {{ "checked" if search_engine.safesearch==True else ""}} readonly="readonly" disabled="disabled"></td>
@@ -176,7 +187,9 @@
 				    <td><input type="checkbox" {{ "checked" if search_engine.safesearch==True else ""}} readonly="readonly" disabled="disabled"></td>
 				    <td>{{ shortcuts[search_engine.name] }}</td>
                                     <th>{{ search_engine.name }}</th>
-                                    <td>{{ checkbox_toggle('engine_' + search_engine.name|replace(' ', '_') + '__' + categ|replace(' ', '_'), (search_engine.name, categ) in disabled_engines) }}</td>
+                                    <td class="onoff-checkbox">
+                                        {{ checkbox_toggle('engine_' + search_engine.name|replace(' ', '_') + '__' + categ|replace(' ', '_'), (search_engine.name, categ) in disabled_engines) }}
+                                    </td>
                                     {% endif %}
                                 </tr>
                             {% endif %}
@@ -203,7 +216,9 @@
                             <div class="panel-body">
                                 <div class="col-xs-6 col-sm-4 col-md-6">{{ _(plugin.description) }}</div>
                                 <div class="col-xs-6 col-sm-4 col-md-6">
+                                    <div class="onoff-checkbox">
                                     {{ checkbox_toggle('plugin_' + plugin.id, plugin.id not in allowed_plugins) }}
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -166,6 +166,7 @@ class SwitchableSetting(Setting):
 
 
 class EnginesSetting(SwitchableSetting):
+
     def _post_init(self):
         super(EnginesSetting, self)._post_init()
         transformed_choices = []
@@ -191,6 +192,7 @@ class EnginesSetting(SwitchableSetting):
 
 
 class PluginsSetting(SwitchableSetting):
+
     def _post_init(self):
         super(PluginsSetting, self)._post_init()
         transformed_choices = []
@@ -225,7 +227,8 @@ class Preferences(object):
                                    'safesearch': MapSetting(settings['search']['safe_search'], map={'0': 0,
                                                                                                     '1': 1,
                                                                                                     '2': 2}),
-                                   'theme': EnumStringSetting(settings['ui']['default_theme'], choices=themes)}
+                                   'theme': EnumStringSetting(settings['ui']['default_theme'], choices=themes),
+                                   'results_on_new_tab': MapSetting(False, map={'0': False, '1': True})}
 
         self.engines = EnginesSetting('engines', choices=engines)
         self.plugins = PluginsSetting('plugins', choices=plugins)

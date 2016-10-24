@@ -15,14 +15,15 @@ along with searx. If not, see < http://www.gnu.org/licenses/ >.
 (C) 2013- by Adam Tauber, <asciimoo@gmail.com>
 '''
 
+import gc
 import threading
-import searx.poolrequests as requests_lib
+from thread import start_new_thread
 from time import time
-from searx import settings
+from uuid import uuid4
+import searx.poolrequests as requests_lib
 from searx.engines import (
     categories, engines
 )
-from searx.languages import language_codes
 from searx.utils import gen_useragent
 from searx.query import Query
 from searx.results import ResultContainer
@@ -56,19 +57,20 @@ def search_request_wrapper(fn, url, engine_name, **kwargs):
 def threaded_requests(requests):
     timeout_limit = max(r[2]['timeout'] for r in requests)
     search_start = time()
+    search_id = uuid4().__str__()
     for fn, url, request_args, engine_name in requests:
         request_args['timeout'] = timeout_limit
         th = threading.Thread(
             target=search_request_wrapper,
             args=(fn, url, engine_name),
             kwargs=request_args,
-            name='search_request',
+            name=search_id,
         )
         th._engine_name = engine_name
         th.start()
 
     for th in threading.enumerate():
-        if th.name == 'search_request':
+        if th.name == search_id:
             remaining_time = max(0.0, timeout_limit - (time() - search_start))
             th.join(remaining_time)
             if th.isAlive():
@@ -138,6 +140,8 @@ class Search(object):
         self.paging = False
         self.pageno = 1
         self.lang = 'all'
+        self.time_range = None
+        self.is_advanced = None
 
         # set blocked engines
         self.disabled_engines = request.preferences.engines.get_disabled()
@@ -178,9 +182,10 @@ class Search(object):
         if len(query_obj.languages):
             self.lang = query_obj.languages[-1]
 
-        self.engines = query_obj.engines
+        self.time_range = self.request_data.get('time_range')
+        self.is_advanced = self.request_data.get('advanced_search')
 
-        self.categories = []
+        self.engines = query_obj.engines
 
         # if engines are calculated from query,
         # set categories by using that informations
@@ -279,6 +284,9 @@ class Search(object):
             if self.lang != 'all' and not engine.language_support:
                 continue
 
+            if self.time_range and not engine.time_range_support:
+                continue
+
             # set default request parameters
             request_params = default_request_params()
             request_params['headers']['User-Agent'] = user_agent
@@ -293,6 +301,8 @@ class Search(object):
 
             # 0 = None, 1 = Moderate, 2 = Strict
             request_params['safesearch'] = request.preferences.get_value('safesearch')
+            request_params['time_range'] = self.time_range
+            request_params['advanced_search'] = self.is_advanced
 
             # update request parameters dependent on
             # search-engine (contained in engines folder)
@@ -339,6 +349,7 @@ class Search(object):
             return self
         # send all search-request
         threaded_requests(requests)
+        start_new_thread(gc.collect, tuple())
 
         # return results, suggestions, answers and infoboxes
         return self

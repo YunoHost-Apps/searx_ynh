@@ -25,7 +25,7 @@ outgoing: # communication with search engines
     pool_maxsize : 10 # Number of simultaneous requests by host
 # uncomment below section if you want to use a proxy
 # see http://docs.python-requests.org/en/latest/user/advanced/#proxies
-# SOCKS proxies are not supported : see https://github.com/kennethreitz/requests/pull/478
+# SOCKS proxies are also supported: see http://docs.python-requests.org/en/master/user/advanced/#socks
 #    proxies :
 #        http : http://127.0.0.1:8080
 #        https: http://127.0.0.1:8080
@@ -84,9 +84,15 @@ engines:
     disabled : True
     shortcut : bb
 
-  - name : btdigg
-    engine : btdigg
-    shortcut : bt
+  - name : crossref
+    engine : json_engine
+    paging : True
+    search_url : http://search.crossref.org/dois?q={query}&page={pageno}
+    url_query : doi
+    title_query : title
+    content_query : fullCitation
+    categories : science
+    shortcut : cr
 
   - name : currency
     engine : currency_convert
@@ -105,6 +111,13 @@ engines:
   - name : ddg definitions
     engine : duckduckgo_definitions
     shortcut : ddd
+    weight : 2
+    disabled : True
+
+  - name : digbt
+    engine : digbt
+    shortcut : dbt
+    timeout : 6.0
     disabled : True
 
   - name : digg
@@ -127,10 +140,12 @@ engines:
   - name : wikidata
     engine : wikidata
     shortcut : wd
+    weight : 2
 
   - name : duckduckgo
     engine : duckduckgo
     shortcut : ddg
+    disabled : True
 
 # api-key required: http://www.faroo.com/hp/api/api.html#key
 #  - name : faroo
@@ -200,6 +215,20 @@ engines:
     engine : google_news
     shortcut : gon
 
+  - name : google scholar
+    engine : xpath
+    paging : True
+    search_url : https://scholar.google.com/scholar?start={pageno}&q={query}&hl=en&as_sdt=0,5&as_vis=1
+    results_xpath : //div[@class="gs_r"]/div[@class="gs_ri"]
+    url_xpath : .//h3/a/@href
+    title_xpath : .//h3/a
+    content_xpath : .//div[@class="gs_rs"]
+    suggestion_xpath : //div[@id="gs_qsuggest"]/ul/li
+    page_size : 10
+    first_page_num : 0
+    categories : science
+    shortcut : gos
+
   - name : google play apps
     engine        : xpath
     search_url    : https://play.google.com/store/search?q={query}&c=apps
@@ -254,6 +283,37 @@ engines:
     disabled : True
     shortcut : habr
 
+  - name : hoogle
+    engine : json_engine
+    paging : True
+    search_url : https://www.haskell.org/hoogle/?mode=json&hoogle={query}&start={pageno}
+    results_query : results
+    url_query : location
+    title_query : self
+    content_query : docs
+    page_size : 20
+    categories : it
+    shortcut : ho
+
+  - name : ina
+    engine : ina
+    shortcut : in
+    timeout : 6.0
+    disabled : True
+
+  - name : microsoft academic
+    engine : json_engine
+    paging : True
+    search_url : https://academic.microsoft.com/api/search/GetEntityResults?query=%40{query}%40&filters=&offset={pageno}&limit=8&correlationId=undefined
+    results_query : results
+    url_query : u
+    title_query : dn
+    content_query : d
+    page_size : 8
+    first_page_num : 0
+    categories : science
+    shortcut : ma
+
   - name : mixcloud
     engine : mixcloud
     shortcut : mc
@@ -267,6 +327,18 @@ engines:
     engine : openstreetmap
     shortcut : osm
 
+  - name : openrepos
+    engine : xpath
+    paging : True
+    search_url : https://openrepos.net/search/node/{query}?page={pageno}
+    url_xpath : //li[@class="search-result"]//h3[@class="title"]/a/@href
+    title_xpath : //li[@class="search-result"]//h3[@class="title"]/a
+    content_xpath : //li[@class="search-result"]//div[@class="search-snippet-info"]//p[@class="search-snippet"]
+    categories : files
+    timeout : 4.0
+    disabled : True
+    shortcut : or
+
   - name : photon
     engine : photon
     shortcut : ph
@@ -274,7 +346,8 @@ engines:
   - name : piratebay
     engine : piratebay
     shortcut : tpb
-    disabled : True
+    url: https://pirateproxy.red/
+    timeout : 3.0
 
   - name : qwant
     engine : qwant
@@ -304,9 +377,10 @@ engines:
     timeout : 10.0
     disabled : True
 
-  - name : kickass
-    engine : kickass
-    shortcut : ka
+  - name : scanr_structures
+    shortcut: scs
+    engine : scanr_structures
+    disabled : True
 
   - name : soundcloud
     engine : soundcloud
@@ -360,11 +434,6 @@ engines:
     shortcut : tt
     timeout : 6.0
     disabled : True
-
-  - name : torrentz
-    engine : torrentz
-    timeout : 5.0
-    shortcut : to
 
   - name : twitter
     engine : twitter
@@ -425,6 +494,19 @@ engines:
     engine : wolframalpha_noapi
     timeout: 6.0
     categories : science
+
+  - name : dictzone
+    engine : dictzone
+    shortcut : dc
+
+  - name : mymemory translated
+    engine : translated
+    shortcut : tl
+    timeout : 5.0
+    disabled : True
+    # You can use without an API key, but you are limited to 1000 words/day
+    # See : http://mymemory.translated.net/doc/usagelimits.php
+    # api_key : ''
 
 #The blekko technology and team have joined IBM Watson! -> https://blekko.com/
 #  - name : blekko images
