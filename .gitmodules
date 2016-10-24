@@ -1,0 +1,3 @@
+[submodule "sources"]
+	path = sources
+	url = https://github.com/asciimoo/searx
