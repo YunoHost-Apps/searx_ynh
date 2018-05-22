@@ -102,7 +102,6 @@ ynh_system_user_create $app
 # UPGRADE SEARX IN ITS VIRTUALENV
 #=================================================
 
-rm -r $final_path/lib/python2.7/site-packages/{pip,setuptools} $final_path/lib/python2.7/site-packages/setuptools-* $final_path/lib/python2.7/site-packages/pip-*
 virtualenv "$final_path"
 
 #run source in a 'sub shell'
