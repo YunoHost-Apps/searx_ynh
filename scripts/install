@@ -55,7 +55,7 @@ ynh_app_setting_set $app is_public $is_public
 # INSTALL DEPENDENCIES
 #=================================================
 
-ynh_install_app_dependencies git build-essential libxslt-dev python-dev python-virtualenv virtualenv python-pybabel zlib1g-dev libffi-dev libssl-dev python-lxml uwsgi uwsgi-plugin-python
+ynh_install_app_dependencies git build-essential libxslt-dev python-dev python-virtualenv virtualenv zlib1g-dev libffi-dev libssl-dev uwsgi uwsgi-plugin-python
 
 #=================================================
 # NGINX CONFIGURATION
@@ -93,8 +93,17 @@ ynh_setup_source "$final_path"
 # INSTALL SEARX IN A VIRTUALENV
 #=================================================
 
-virtualenv --system-site-packages "$final_path"
-bash -c "source $final_path/bin/activate && pip install -U pip setuptools && pip install --requirement $final_path/requirements-ynh.txt"
+virtualenv "$final_path"
+#run source in a 'sub shell'
+(
+	set +o nounset
+	source "$final_path/bin/activate"
+	set -o nounset
+	pip install --upgrade pip
+	pip install --upgrade setuptools
+	pip install --requirement "$final_path/requirements-ynh.txt"
+	pip install lxml babel
+)
 
 #=================================================
 # CONFIGURE SEARX

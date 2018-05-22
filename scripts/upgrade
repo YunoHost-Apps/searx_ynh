@@ -59,6 +59,12 @@ path_url=$(ynh_normalize_url_path $path_url)
 #=================================================
 # STANDARD UPGRADE STEPS
 #=================================================
+# INSTALL DEPENDENCIES
+#=================================================
+
+ynh_install_app_dependencies git build-essential libxslt-dev python-dev python-virtualenv virtualenv zlib1g-dev libffi-dev libssl-dev uwsgi uwsgi-plugin-python
+
+#=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
 #=================================================
 
@@ -97,8 +103,19 @@ ynh_system_user_create $app
 #=================================================
 
 rm -r $final_path/lib/python2.7/site-packages/{pip,setuptools} $final_path/lib/python2.7/site-packages/setuptools-* $final_path/lib/python2.7/site-packages/pip-*
-virtualenv --system-site-packages "$final_path"
-bash -c "source $final_path/bin/activate && pip install -U pip setuptools && pip install --requirement $final_path/requirements-ynh.txt --upgrade"
+virtualenv "$final_path"
+
+#run source in a 'sub shell'
+(
+	set +o nounset
+	source "$final_path/bin/activate"
+	set -o nounset
+	pip install --upgrade pip
+	pip install --upgrade setuptools
+	pip install --requirement "$final_path/requirements-ynh.txt"
+	pip install lxml babel
+)
+
 
 #=================================================
 # CONFIGURE SEARX

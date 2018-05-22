@@ -7,15 +7,15 @@
 		"fr": "Un méta-moteur de recherche respectueux de la vie privée et bidouillable", 
 		"de": "Eine Meta-Suchmaschine, die den Privatsphäre wahrt und 'hackable' ist."
 	},
-	"version": "0.13.1-1",
+	"version": "0.13.1~ynh1",
 	"url": "https://asciimoo.github.io/searx/",
-	"license": "AGPLv3",
+	"license": "AGPL-3.0-or-later",
 	"maintainer": {
 		"name": "opi",
 		"email": "opi@zeropi.net"
 	},
 	"requirements": {
-        "yunohost": ">= 2.7.2"
+        "yunohost": ">= 2.7.12"
 	},
 	"multi_instance": false,
 	"services": [
