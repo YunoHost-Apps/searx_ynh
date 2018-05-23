@@ -6,7 +6,7 @@
 # IMPORT GENERIC HELPERS
 #=================================================
 
-# source _common.sh
+source _common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
@@ -25,10 +25,10 @@ final_path=$(ynh_app_setting_get $app final_path)
 #=================================================
 
 # Fix is_public as a boolean value
-if [ "$is_public" = "Yes" ]; then
+if [ "${is_public,,}" = "yes" ]; then
 	ynh_app_setting_set $app is_public 1
 	is_public=1
-elif [ "$is_public" = "No" ]; then
+elif [ "${is_public,,}" = "no" ]; then
 	ynh_app_setting_set $app is_public 0
 	is_public=0
 fi
@@ -102,8 +102,6 @@ ynh_system_user_create $app
 # UPGRADE SEARX IN ITS VIRTUALENV
 #=================================================
 
-virtualenv "$final_path"
-
 #run source in a 'sub shell'
 (
 	set +o nounset
@@ -114,7 +112,6 @@ virtualenv "$final_path"
 	pip install --requirement "$final_path/requirements-ynh.txt"
 	pip install lxml babel
 )
-
 
 #=================================================
 # CONFIGURE SEARX
@@ -150,7 +147,13 @@ chown $app: --recursive "$final_path"
 cp ../conf/searx.ini /etc/uwsgi/apps-available/$app.ini
 ynh_replace_string "__APP__" "$app" /etc/uwsgi/apps-available/$app.ini
 ynh_replace_string "__FINALPATH__" "$final_path" /etc/uwsgi/apps-available/$app.ini
-systemctl restart uwsgi
+
+#=================================================
+# CHECK SEARX STARTING
+#=================================================
+
+# Wait for searx to be fully started
+ynh_check_starting "spawned uWSGI master process" "/var/log/uwsgi/app/$app.log" "300" "uwsgi"
 
 #=================================================
 # SETUP SSOWAT
