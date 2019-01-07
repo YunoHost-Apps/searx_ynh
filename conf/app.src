@@ -1,5 +1,5 @@
-SOURCE_URL=https://github.com/asciimoo/searx/archive/v0.14.0.tar.gz
-SOURCE_SUM=002c7f9ceeafc5ada2f1fd30b5d5f6c9
+SOURCE_URL=https://github.com/asciimoo/searx/archive/v0.15.0.tar.gz
+SOURCE_SUM=fbf7a16ece1e464d69c5a08f5a039a1a
 SOURCE_SUM_PRG=md5sum
 SOURCE_FORMAT=tar.gz
 SOURCE_IN_SUBDIR=true

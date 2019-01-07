@@ -62,7 +62,7 @@ path_url=$(ynh_normalize_url_path $path_url)
 # UPGRADE DEPENDENCIES
 #=================================================
 
-ynh_install_app_dependencies git build-essential libxslt-dev python-dev python-virtualenv virtualenv python-babel zlib1g-dev libffi-dev libssl-dev python-lxml uwsgi uwsgi-plugin-python
+ynh_install_app_dependencies git build-essential libxslt-dev python3-dev python3-virtualenv virtualenv python3-babel zlib1g-dev libffi-dev libssl-dev python3-lxml uwsgi uwsgi-plugin-python3
 
 #=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
@@ -102,8 +102,14 @@ ynh_system_user_create $app
 # UPGRADE SEARX IN ITS VIRTUALENV
 #=================================================
 
-rm -r $final_path/lib/python2.7/site-packages/setuptools $final_path/lib/python2.7/site-packages/setuptools-*
-virtualenv --system-site-packages "$final_path"
+if [ -d $final_path/lib/python2.7 ]; then
+    # The old python2 venv is there, we need to remove it first
+    rm -r $final_path/bin $final_path/lib $final_path/include
+    rm $final_path/pip-selfcheck.json
+else
+    rm -r $final_path/lib/python3.5/site-packages/setuptools $final_path/lib/python3.5/site-packages/setuptools-*
+fi
+virtualenv --python=/usr/bin/python3 --system-site-packages "$final_path"
 set +u; source $final_path/bin/activate; set -u
 pip install -U setuptools
 pip install --requirement $final_path/requirements-ynh.txt --upgrade
