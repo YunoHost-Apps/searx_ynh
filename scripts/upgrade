@@ -105,7 +105,7 @@ ynh_system_user_create $app
 if [ -d $final_path/lib/python2.7 ]; then
     # The old python2 venv is there, we need to remove it first
     rm -r $final_path/bin $final_path/lib $final_path/include
-    rm $final_path/pip-selfcheck.json
+    [ -f $final_path/pip-selfcheck.json ] && rm $final_path/pip-selfcheck.json
 else
     rm -r $final_path/lib/python3.5/site-packages/setuptools $final_path/lib/python3.5/site-packages/setuptools-*
 fi
