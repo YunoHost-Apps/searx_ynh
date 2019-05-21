@@ -6,12 +6,7 @@
 # IMPORT GENERIC HELPERS
 #=================================================
 
-# if [ ! -e _common.sh ]; then
-# 	# Rapatrie le fichier de fonctions si il n'est pas dans le dossier courant
-# 	cp ../settings/scripts/_common.sh ./_common.sh
-# 	chmod a+rx _common.sh
-# fi
-# source _common.sh
+# source ../settings/scripts/_common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
@@ -24,24 +19,26 @@ ynh_abort_if_errors
 #=================================================
 # LOAD SETTINGS
 #=================================================
+ynh_print_info "Loading installation settings..."
 
-# Récupère les infos de l'application.
 app=$YNH_APP_INSTANCE_NAME
 
-final_path=$(ynh_app_setting_get $app final_path)
 domain=$(ynh_app_setting_get $app domain)
+final_path=$(ynh_app_setting_get $app final_path)
 
 #=================================================
 # STANDARD BACKUP STEPS
 #=================================================
 # BACKUP OF THE MAIN DIR OF THE APP
 #=================================================
+ynh_print_info "Backing up the main app directory..."
 
 ynh_backup "$final_path"
 
 #=================================================
 # BACKUP OF THE NGINX CONFIGURATION
 #=================================================
+ynh_print_info "Backing up nginx web server configuration..."
 
 ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf"
 
@@ -50,5 +47,12 @@ ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf"
 #=================================================
 # BACKUP OF THE UWSGI CONFIG
 #=================================================
+ynh_print_info "Backing up uWSGI configuration..."
 
 ynh_backup "/etc/uwsgi/apps-available/$app.ini"
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+
+ynh_print_info "Backup script completed for $app. (YunoHost will then actually copy those files to the archive)."

@@ -13,6 +13,9 @@ source /usr/share/yunohost/helpers
 # MANAGE FAILURE OF THE SCRIPT
 #=================================================
 
+ynh_clean_setup () {
+	ynh_clean_check_starting
+}
 # Exit if an error occurs during the execution of the script
 ynh_abort_if_errors
 
@@ -29,6 +32,7 @@ app=$YNH_APP_INSTANCE_NAME
 #=================================================
 # CHECK IF THE APP CAN BE INSTALLED WITH THIS ARGS
 #=================================================
+ynh_print_info "Validating installation parameters..."
 
 final_path="/opt/yunohost/$app"
 test ! -e "$final_path" || ynh_die "This path already contains a folder"
@@ -36,14 +40,13 @@ test ! -e "$final_path" || ynh_die "This path already contains a folder"
 # Normalize the url path syntax
 path_url=$(ynh_normalize_url_path $path_url)
 
-# Check web path availability
-ynh_webpath_available $domain $path_url
 # Register (book) web path
 ynh_webpath_register $app $domain $path_url
 
 #=================================================
 # STORE SETTINGS FROM MANIFEST
 #=================================================
+ynh_print_info "Storing installation settings..."
 
 ynh_app_setting_set $app domain $domain
 ynh_app_setting_set $app path $path_url
@@ -54,27 +57,23 @@ ynh_app_setting_set $app is_public $is_public
 #=================================================
 # INSTALL DEPENDENCIES
 #=================================================
+ynh_print_info "Installing dependencies..."
 
-ynh_install_app_dependencies git build-essential libxslt-dev python3-dev python3-virtualenv virtualenv python3-babel zlib1g-dev libffi-dev libssl-dev python3-lxml uwsgi uwsgi-plugin-python3
+ynh_install_app_dependencies $pkg_dependencies
 
 #=================================================
 # NGINX CONFIGURATION
 #=================================================
+ynh_print_info "Configuring nginx web server..."
 
-ynh_add_nginx_config
-if [ "$path_url" = "/" ]
-then
-	ynh_replace_string "__PATH_NO_ROOT__" "" /etc/nginx/conf.d/$domain.d/$app.conf
-	sed --in-place '/#noroot*/d' /etc/nginx/conf.d/$domain.d/$app.conf
-else
-	ynh_replace_string "#noroot" "" /etc/nginx/conf.d/$domain.d/$app.conf
-	ynh_replace_string "__PATH_NO_ROOT__" "$path_url" /etc/nginx/conf.d/$domain.d/$app.conf
-fi
-ynh_store_file_checksum "/etc/nginx/conf.d/$domain.d/$app.conf"
+path_no_root=${path_url%/}
+# Create a dedicated nginx config
+ynh_add_nginx_config "path_no_root"
 
 #=================================================
 # CREATE DEDICATED USER
 #=================================================
+ynh_print_info "Configuring system user..."
 
 # Create a system user
 ynh_system_user_create $app
@@ -82,6 +81,7 @@ ynh_system_user_create $app
 #=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
 #=================================================
+ynh_print_info "Setting up source files..."
 
 ynh_app_setting_set $app final_path $final_path
 # Download, check integrity, uncompress and patch the source from app.src
@@ -92,6 +92,7 @@ ynh_setup_source "$final_path"
 #=================================================
 # INSTALL SEARX IN A VIRTUALENV
 #=================================================
+ynh_print_info "Installing Searx..."
 
 virtualenv --python=/usr/bin/python3 --system-site-packages "$final_path"
 set +u; source $final_path/bin/activate; set -u
@@ -101,6 +102,7 @@ pip install --requirement $final_path/requirements-ynh.txt
 #=================================================
 # CONFIGURE SEARX
 #=================================================
+ynh_print_info "Configuring Searx..."
 
 # Change instance name
 ynh_replace_string "instance_name : \"searx\"" "instance_name : \"YunoSearx\"" "$final_path/searx/settings.yml"
@@ -126,6 +128,7 @@ chown $app: --recursive "$final_path"
 #=================================================
 # CONFIGURE UWSGI FOR SEARX
 #=================================================
+ynh_print_info "Configuring uWSGI for Searx..."
 
 cp ../conf/searx.ini /etc/uwsgi/apps-available/$app.ini
 ynh_replace_string "__APP__" "$app" /etc/uwsgi/apps-available/$app.ini
@@ -133,25 +136,26 @@ ynh_replace_string "__FINALPATH__" "$final_path" /etc/uwsgi/apps-available/$app.
 ln -s /etc/uwsgi/apps-available/$app.ini /etc/uwsgi/apps-enabled/$app.ini
 
 #=================================================
-# ENABLE UWSGI SERVICE IN ADMIN PANEL
+# ADVERTISE SERVICE IN ADMIN PANEL
 #=================================================
 
-systemctl restart uwsgi
 # Ajoute le service au monitoring de Yunohost.
 yunohost service add uwsgi --log "/var/log/uwsgi/app/$app.log"
 
 #=================================================
 # CHECK SEARX STARTING
 #=================================================
+ynh_print_info "Starting Searx..."
 
 # Wait for searx to be fully started
-ynh_check_starting "spawned uWSGI master process" "/var/log/uwsgi/app/$app.log" "300" "uwsgi"
+ynh_systemd_action --service_name=uwsgi --action=restart --line_match="spawned uWSGI master process" --log_path="/var/log/uwsgi/app/$app.log"
 
 #=================================================
 # GENERIC FINALISATION
 #=================================================
 # SETUP SSOWAT
 #=================================================
+ynh_print_info "Configuring SSOwat..."
 
 # Make app public if necessary
 if [ $is_public -eq 1 ]
@@ -162,5 +166,12 @@ fi
 #=================================================
 # RELOAD NGINX
 #=================================================
+ynh_print_info "Reloading nginx web server..."
 
 systemctl reload nginx
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+
+ynh_print_info "Installation of $app completed"

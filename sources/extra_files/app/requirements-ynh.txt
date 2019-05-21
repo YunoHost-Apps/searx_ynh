@@ -13,6 +13,6 @@ requests[socks]==2.19.1
 # Additionnals requirements
 markupsafe>=0.23
 ndg-httpsclient>=0.4.2
-pyasn1>=0.1.9
-pyasn1-modules>=0.0.8
-cffi>=1.6
+pyasn1>=0.2.3
+pyasn1-modules>=0.0.9
+cffi>=1.12.1
