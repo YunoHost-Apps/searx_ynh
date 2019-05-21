@@ -5,7 +5,7 @@
 #=================================================
 
 # dependencies used by the app
-pkg_dependencies="git build-essential libxslt-dev python-dev python-virtualenv python-cffi virtualenv python-babel zlib1g-dev libffi-dev libssl-dev python-lxml uwsgi uwsgi-plugin-python"
+pkg_dependencies="git build-essential libxslt-dev libxslt-dev python3-dev python3-virtualenv python3-cffi virtualenv python3-babel zlib1g-dev libffi-dev libssl-dev python3-lxml uwsgi uwsgi-plugin-python3"
 
 #=================================================
 # FUTURE OFFICIAL HELPERS
