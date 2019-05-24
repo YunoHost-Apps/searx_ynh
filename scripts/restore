@@ -25,19 +25,19 @@ ynh_abort_if_errors
 
 app=$YNH_APP_INSTANCE_NAME
 
-domain=$(ynh_app_setting_get $app domain)
-path_url=$(ynh_app_setting_get $app path)
-final_path=$(ynh_app_setting_get $app final_path)
+domain=$(ynh_app_setting_get --app=$app --key=domain)
+path_url=$(ynh_app_setting_get --app=$app --key=path)
+final_path=$(ynh_app_setting_get --app=$app --key=final_path)
 
 #=================================================
 # CHECK IF THE APP CAN BE RESTORED
 #=================================================
-ynh_print_info "Validating restoration parameters..."
+ynh_script_progression --message="Validating restoration parameters..." --weight=2
 
-ynh_webpath_available $domain $path_url \
-	|| ynh_die "Path not available: ${domain}${path_url}"
+ynh_webpath_available --domain=$domain --path_url=$path_url \
+	|| ynh_die --message="Path not available: ${domain}${path_url}"
 test ! -d $final_path \
-	|| ynh_die "There is already a directory: $final_path "
+	|| ynh_die --message="There is already a directory: $final_path "
 
 #=================================================
 # STANDARD RESTORE STEPS
@@ -45,30 +45,30 @@ test ! -d $final_path \
 # RESTORE OF THE NGINX CONFIGURATION
 #=================================================
 
-ynh_restore_file "/etc/nginx/conf.d/$domain.d/$app.conf"
+ynh_restore_file --origin_path="/etc/nginx/conf.d/$domain.d/$app.conf"
 
 #=================================================
 # RESTORE OF THE MAIN DIR OF THE APP
 #=================================================
-ynh_print_info "Restoring the app main directory..."
+ynh_script_progression --message="Restoring the app main directory..."
 
 mkdir -p "$(dirname "$final_path")"
-ynh_restore_file "$final_path"
+ynh_restore_file --origin_path="$final_path"
 
 #=================================================
 # INSTALL DEPENDENCIES
 #=================================================
-ynh_print_info "Reinstalling dependencies..."
+ynh_script_progression --message="Reinstalling dependencies..." --weight=35
 
 ynh_install_app_dependencies $pkg_dependencies
 
 #=================================================
 # RECREATE OF THE DEDICATED USER
 #=================================================
-ynh_print_info "Recreating the dedicated system user..."
+ynh_script_progression --message="Recreating the dedicated system user..." --weight=3
 
 # Create the dedicated user (if not existing)
-ynh_system_user_create $app
+ynh_system_user_create --username=$app
 
 #=================================================
 # SPECIFIC RESTORE
@@ -82,7 +82,7 @@ chown $app: --recursive "$final_path"
 # RESTORE THE UWSGI CONFIG
 #=================================================
 
-ynh_restore_file "/etc/uwsgi/apps-available/$app.ini"
+ynh_restore_file --origin_path="/etc/uwsgi/apps-available/$app.ini"
 ln -s /etc/uwsgi/apps-available/$app.ini /etc/uwsgi/apps-enabled/$app.ini
 
 #=================================================
@@ -90,14 +90,14 @@ ln -s /etc/uwsgi/apps-available/$app.ini /etc/uwsgi/apps-enabled/$app.ini
 #=================================================
 # RELOAD NGINX
 #=================================================
-ynh_print_info "Reloading nginx web server..."
+ynh_script_progression --message="Reloading nginx web server..."
 
-systemctl reload nginx
+ynh_systemd_action --service_name=nginx --action=reload
 
 #=================================================
 # CHECK SEARX STARTING
 #=================================================
-ynh_print_info "Starting Searx..."
+ynh_script_progression --message="Starting Searx..." --weight=4
 
 # Wait for searx to be fully started
 ynh_systemd_action --service_name=uwsgi --action=restart --line_match="spawned uWSGI master process" --log_path="/var/log/uwsgi/app/$app.log"
@@ -106,4 +106,4 @@ ynh_systemd_action --service_name=uwsgi --action=restart --line_match="spawned u
 # END OF SCRIPT
 #=================================================
 
-ynh_print_info "Restoration completed for $app"
+ynh_script_progression --message="Restoration completed for $app" --last

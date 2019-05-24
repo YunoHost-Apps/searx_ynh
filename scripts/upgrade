@@ -12,39 +12,45 @@ source /usr/share/yunohost/helpers
 #=================================================
 # LOAD SETTINGS
 #=================================================
-ynh_print_info "Loading installation settings..."
+ynh_script_progression --message="Loading installation settings..."
 
 app=$YNH_APP_INSTANCE_NAME
 
-domain=$(ynh_app_setting_get $app domain)
-path_url=$(ynh_app_setting_get $app path)
-is_public=$(ynh_app_setting_get $app is_public)
-final_path=$(ynh_app_setting_get $app final_path)
+domain=$(ynh_app_setting_get --app=$app --key=domain)
+path_url=$(ynh_app_setting_get --app=$app --key=path)
+is_public=$(ynh_app_setting_get --app=$app --key=is_public)
+final_path=$(ynh_app_setting_get --app=$app --key=final_path)
+
+#=================================================
+# CHECK VERSION
+#=================================================
+
+upgrade_type=$(ynh_check_app_version_changed)
 
 #=================================================
 # ENSURE DOWNWARD COMPATIBILITY
 #=================================================
-ynh_print_info "Ensuring downward compatibility..."
+ynh_script_progression --message="Ensuring downward compatibility..."
 
 # Fix is_public as a boolean value
-if [ "${is_public,,}" = "yes" ]; then
-	ynh_app_setting_set $app is_public 1
+if [ "$is_public" = "Yes" ]; then
+	ynh_app_setting_set --app=$app --key=is_public --value=1
 	is_public=1
-elif [ "${is_public,,}" = "no" ]; then
-	ynh_app_setting_set $app is_public 0
+elif [ "$is_public" = "No" ]; then
+	ynh_app_setting_set --app=$app --key=is_public --value=0
 	is_public=0
 fi
 
 # If final_path doesn't exist, create it
-if [ -z $final_path ]; then
-	final_path="/opt/yunohost/$app"
-	ynh_app_setting_set $app final_path $final_path
+if [ -z "$final_path" ]; then
+	final_path=/var/www/$app
+	ynh_app_setting_set --app=$app --key=final_path --value=$final_path
 fi
 
 #=================================================
 # BACKUP BEFORE UPGRADE THEN ACTIVE TRAP
 #=================================================
-ynh_print_info "Backing up the app before upgrading (may take a while)..."
+ynh_script_progression --message="Backing up the app before upgrading (may take a while)..."2
 
 # Backup the current version of the app
 ynh_backup_before_upgrade
@@ -60,32 +66,36 @@ ynh_abort_if_errors
 #=================================================
 
 # Normalize the URL path syntax
-path_url=$(ynh_normalize_url_path $path_url)
+path_url=$(ynh_normalize_url_path --path_url=$path_url)
 
 #=================================================
 # STANDARD UPGRADE STEPS
 #=================================================
 # UPGRADE DEPENDENCIES
 #=================================================
-ynh_print_info "Upgrading dependencies..."
+ynh_script_progression --message="Upgrading dependencies..." --weight=7
 
 ynh_install_app_dependencies $pkg_dependencies
 
 #=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
 #=================================================
-ynh_print_info "Upgrading source files..."
 
-# Verify the checksum and backup the file if it's different
-ynh_backup_if_checksum_is_different "$final_path/searx/settings.yml"
+if [ "$upgrade_type" == "UPGRADE_APP" ]
+then
+	# Verify the checksum and backup the file if it's different
+	ynh_backup_if_checksum_is_different --file="$final_path/searx/settings.yml"
 
-# Download, check integrity, uncompress and patch the source from app.src
-ynh_setup_source "$final_path"
+	ynh_script_progression --message="Upgrading source files..." --weight=3
+
+	# Download, check integrity, uncompress and patch the source from app.src
+	ynh_setup_source --dest_dir="$final_path"
+fi
 
 #=================================================
 # NGINX CONFIGURATION
 #=================================================
-ynh_print_info "Upgrading nginx web server configuration..."
+ynh_script_progression --message="Upgrading nginx web server configuration..."
 
 path_no_root=${path_url%/}
 # Create a dedicated nginx config
@@ -94,17 +104,17 @@ ynh_add_nginx_config "path_no_root"
 #=================================================
 # CREATE DEDICATED USER
 #=================================================
-ynh_print_info "Making sure dedicated system user exists..."
+ynh_script_progression --message="Making sure dedicated system user exists..."
 
 # Create a dedicated user (if not existing)
-ynh_system_user_create $app
+ynh_system_user_create --username=$app
 
 #=================================================
 # SPECIFIC UPGRADE
 #=================================================
 # UPGRADE SEARX IN ITS VIRTUALENV
 #=================================================
-ynh_print_info "Upgrading Searx..."
+ynh_script_progression --message="Upgrading Searx..." --weight=7
 
 if [ -d $final_path/lib/python2.7 ]; then
     # The old python2 venv is there, we need to remove it first
@@ -121,22 +131,18 @@ pip install --requirement $final_path/requirements-ynh.txt --upgrade
 #=================================================
 # CONFIGURE SEARX
 #=================================================
-ynh_print_info "Reconfiguring Searx..."
+ynh_script_progression --message="Reconfiguring Searx..." --weight=2
 
 # Change instance name
-ynh_replace_string "instance_name : \"searx\"" "instance_name : \"YunoSearx\"" "$final_path/searx/settings.yml"
+ynh_replace_string --match_string="instance_name : \"searx\"" --replace_string="instance_name : \"YunoSearx\"" --target_file="$final_path/searx/settings.yml"
 
 # Generate a secret key
-ynh_replace_string "secret_key : \"ultrasecretkey\"" "secret_key : \"$(ynh_string_random)\"" "$final_path/searx/settings.yml"
+ynh_replace_string --match_string="secret_key : \"ultrasecretkey\"" --replace_string="secret_key : \"$(ynh_string_random)\"" --target_file="$final_path/searx/settings.yml"
 
-# Modify the base_url parameter, if it's installed in a subpath
-if [ "$path_url" != "/" ]
-then
-  ynh_replace_string "base_url : False" "base_url : https://${domain}${path_url}/" "$final_path/searx/settings.yml"
-else
-  ynh_replace_string "base_url : False" "base_url : False" "$final_path/searx/settings.yml"
-fi
-ynh_store_file_checksum "$final_path/searx/settings.yml"
+# Modify the base_url parameter
+ynh_replace_string --match_string="base_url : False" --replace_string="base_url : https://${domain}${path_url%/}/" --target_file="$final_path/searx/settings.yml"
+
+ynh_store_file_checksum --file="$final_path/searx/settings.yml"
 
 #=================================================
 # GENERIC FINALISATION
@@ -149,16 +155,16 @@ chown $app: --recursive "$final_path"
 #=================================================
 # CONFIGURE UWSGI FOR SEARX
 #=================================================
-ynh_print_info "Reconfiguring uWSGI for Searx..."
+ynh_script_progression --message="Reconfiguring uWSGI for Searx..."
 
 cp ../conf/searx.ini /etc/uwsgi/apps-available/$app.ini
-ynh_replace_string "__APP__" "$app" /etc/uwsgi/apps-available/$app.ini
-ynh_replace_string "__FINALPATH__" "$final_path" /etc/uwsgi/apps-available/$app.ini
+ynh_replace_string --match_string="__APP__" --replace_string="$app" --target_file=/etc/uwsgi/apps-available/$app.ini
+ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file=/etc/uwsgi/apps-available/$app.ini
 
 #=================================================
 # CHECK SEARX STARTING
 #=================================================
-ynh_print_info "Restarting Searx..."
+ynh_script_progression --message="Restarting Searx..." --weight=3
 
 # Wait for searx to be fully started
 ynh_systemd_action --service_name=uwsgi --action=restart --line_match="spawned uWSGI master process" --log_path="/var/log/uwsgi/app/$app.log"
@@ -166,23 +172,23 @@ ynh_systemd_action --service_name=uwsgi --action=restart --line_match="spawned u
 #=================================================
 # SETUP SSOWAT
 #=================================================
-ynh_print_info "Upgrading SSOwat configuration..."
+ynh_script_progression --message="Upgrading SSOwat configuration..."
 
 # Make app public if necessary
 if [ $is_public -eq 1 ]
 then
-	ynh_app_setting_set $app skipped_uris "/"
+	ynh_app_setting_set --app=$app --key=skipped_uris --value="/"
 fi
 
 #=================================================
 # RELOAD NGINX
 #=================================================
-ynh_print_info "Reloading nginx web server..."
+ynh_script_progression --message="Reloading nginx web server..."
 
-systemctl reload nginx
+ynh_systemd_action --service_name=nginx --action=reload
 
 #=================================================
 # END OF SCRIPT
 #=================================================
 
-ynh_print_info "Upgrade of $app completed"
+ynh_script_progression --message="Upgrade of $app completed" --last
