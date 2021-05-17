@@ -105,7 +105,7 @@ ynh_script_progression --message="Configuring Searx..." --weight=2
 
 secret_key=$(ynh_string_random)
 
-ynh_add_config --template="../conf/custom.yml" --destination="$final_path/searx/custom.yml"
+ynh_add_config --template="../conf/settings.yml" --destination="$final_path/searx/settings.yml"
 
 #=================================================
 # SET PERMISSIONS ON SEARX DIRECTORY
