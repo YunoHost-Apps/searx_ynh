@@ -1,0 +1,5 @@
+general:
+    instance_name : "YunoSearx" # displayed name
+
+server:
+    secret_key : "__SECRET_KEY__" # change this!

@@ -37,6 +37,12 @@ if [ -z "$final_path" ]; then
 	ynh_app_setting_set --app=$app --key=final_path --value=$final_path
 fi
 
+# If custom.yml doesn't exist, create it
+if [ -z "$final_path/searx/custom.yml" ]; then
+	secret_key=$(ynh_string_random)
+	ynh_add_config --template="../conf/custom.yml" --destination="$final_path/searx/custom.yml"
+fi
+
 # Cleaning legacy permissions
 if ynh_legacy_permissions_exists; then
 	ynh_legacy_permissions_delete_all
@@ -81,13 +87,10 @@ ynh_system_user_create --username=$app
 
 if [ "$upgrade_type" == "UPGRADE_APP" ]
 then
-	# Verify the checksum and backup the file if it's different
-	ynh_backup_if_checksum_is_different --file="$final_path/searx/settings.yml"
-
 	ynh_script_progression --message="Upgrading source files..." --weight=3
 
 	# Download, check integrity, uncompress and patch the source from app.src
-	ynh_setup_source --dest_dir="$final_path"
+	ynh_setup_source --dest_dir="$final_path" --keep="$final_path/searx/custom.yml"
 fi
 
 #=================================================
@@ -121,22 +124,6 @@ python3 -m venv --system-site-packages "$final_path"
 set +u; source $final_path/bin/activate; set -u
 pip3 install -U setuptools
 pip3 install --requirement $final_path/requirements-ynh.txt --upgrade
-
-#=================================================
-# CONFIGURE SEARX
-#=================================================
-ynh_script_progression --message="Reconfiguring Searx..." --weight=2
-
-# Change instance name
-ynh_replace_string --match_string="instance_name : \"searx\"" --replace_string="instance_name : \"YunoSearx\"" --target_file="$final_path/searx/settings.yml"
-
-# Generate a secret key
-ynh_replace_string --match_string="secret_key : \"ultrasecretkey\"" --replace_string="secret_key : \"$(ynh_string_random)\"" --target_file="$final_path/searx/settings.yml"
-
-# Modify the base_url parameter
-#ynh_replace_string --match_string="base_url : False" --replace_string="base_url : https://${domain}${path_url%/}/" --target_file="$final_path/searx/settings.yml"
-
-ynh_store_file_checksum --file="$final_path/searx/settings.yml"
 
 #=================================================
 # GENERIC FINALISATION
