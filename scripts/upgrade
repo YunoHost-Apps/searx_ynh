@@ -37,12 +37,6 @@ if [ -z "$final_path" ]; then
 	ynh_app_setting_set --app=$app --key=final_path --value=$final_path
 fi
 
-# If custom.yml doesn't exist, create it
-if [ -z "$final_path/searx/custom.yml" ]; then
-	secret_key=$(ynh_string_random)
-	ynh_add_config --template="../conf/custom.yml" --destination="$final_path/searx/custom.yml"
-fi
-
 # Cleaning legacy permissions
 if ynh_legacy_permissions_exists; then
 	ynh_legacy_permissions_delete_all
