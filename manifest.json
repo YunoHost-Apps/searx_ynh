@@ -9,6 +9,14 @@
 	},
 	"version": "1.0.0~ynh2",
 	"url": "https://searx.github.io/searx/",
+	"upstream": {
+        "license": "AGPL-3.0-or-later",
+        "website": "https://searx.github.io/searx/",
+        "demo": "https://demo.yunohost.org/searx/",
+        "admindoc": "https://github.com/searx/searx/wiki",
+        "userdoc": "https://yunohost.org/apps",
+        "code": "https://github.com/searx/searx"
+    },
 	"license": "AGPL-3.0-or-later",
 	"maintainer": {
 		"name": "opi",
