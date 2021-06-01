@@ -73,7 +73,7 @@ ynh_install_app_dependencies $pkg_dependencies
 ynh_script_progression --message="Making sure dedicated system user exists..." --weight=1
 
 # Create a dedicated user (if not existing)
-ynh_system_user_create --username=$app
+ynh_system_user_create --username=$app --home_dir="$final_path"
 
 #=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
@@ -86,6 +86,10 @@ then
 	# Download, check integrity, uncompress and patch the source from app.src
 	ynh_setup_source --dest_dir="$final_path" --keep="$final_path/searx/settings.yml"
 fi
+
+chmod 750 "$final_path"
+chmod -R o-rwx "$final_path"
+chown -R $app:www-data "$final_path"
 
 #=================================================
 # NGINX CONFIGURATION
@@ -118,14 +122,6 @@ python3 -m venv --system-site-packages "$final_path"
 set +u; source $final_path/bin/activate; set -u
 pip3 install -U setuptools
 pip3 install --requirement $final_path/requirements-ynh.txt --upgrade
-
-#=================================================
-# GENERIC FINALISATION
-#=================================================
-# SECURING FILES AND DIRECTORIES
-#=================================================
-
-chown -R $app: "$final_path"
 
 #=================================================
 # CONFIGURE UWSGI FOR SEARX

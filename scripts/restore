@@ -53,7 +53,7 @@ ynh_restore_file --origin_path="/etc/nginx/conf.d/$domain.d/$app.conf"
 ynh_script_progression --message="Recreating the dedicated system user..." --weight=3
 
 # Create the dedicated user (if not existing)
-ynh_system_user_create --username=$app
+ynh_system_user_create --username=$app --home_dir="$final_path"
 
 #=================================================
 # RESTORE OF THE MAIN DIR OF THE APP
@@ -63,20 +63,16 @@ ynh_script_progression --message="Restoring the app main directory..." --weight=
 mkdir -p "$(dirname "$final_path")"
 ynh_restore_file --origin_path="$final_path"
 
+chmod 750 "$final_path"
+chmod -R o-rwx "$final_path"
+chown -R $app:www-data "$final_path"
+
 #=================================================
 # INSTALL DEPENDENCIES
 #=================================================
 ynh_script_progression --message="Reinstalling dependencies..." --weight=35
 
 ynh_install_app_dependencies $pkg_dependencies
-
-#=================================================
-# SPECIFIC RESTORE
-#=================================================
-# RESTORE USER RIGHTS
-#=================================================
-
-chown -R $app: "$final_path"
 
 #=================================================
 # RESTORE THE UWSGI CONFIG
