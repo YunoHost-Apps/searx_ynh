@@ -1,56 +1,56 @@
 {
-	"name": "Searx",
-	"id": "searx",
-	"packaging_format": 1,
-	"description": {
-		"en": "Privacy-respecting, hackable metasearch engine",
-		"fr": "Méta-moteur de recherche respectueux de la vie privée et bidouillable", 
-		"de": "Meta-Suchmaschine, die den Privatsphäre wahrt und 'hackable' ist"
-	},
-	"version": "1.0.0~ynh4",
-	"url": "https://searx.github.io/searx/",
-	"upstream": {
+    "name": "Searx",
+    "id": "searx",
+    "packaging_format": 1,
+    "description": {
+        "en": "Privacy-respecting, hackable metasearch engine",
+        "fr": "Méta-moteur de recherche respectueux de la vie privée et bidouillable",
+        "de": "Meta-Suchmaschine, die den Privatsphäre wahrt und 'hackable' ist"
+    },
+    "version": "v0.18.0~ynh1",
+    "url": "https://searx.github.io/searx/",
+    "upstream": {
         "license": "AGPL-3.0-or-later",
         "website": "https://searx.github.io/searx/",
         "demo": "https://demo.yunohost.org/searx/",
         "admindoc": "https://github.com/searx/searx/wiki",
         "code": "https://github.com/searx/searx"
     },
-	"license": "AGPL-3.0-or-later",
-	"maintainer": {
-		"name": "opi",
-		"email": "opi@zeropi.net"
-	},
-	"requirements": {
+    "license": "AGPL-3.0-or-later",
+    "maintainer": {
+        "name": "opi",
+        "email": "opi@zeropi.net"
+    },
+    "requirements": {
         "yunohost": ">= 4.3.0"
-	},
-	"multi_instance": false,
-	"services": [
-		"nginx",
-		"uwsgi"
-	],
-	"arguments": {
-		"install" : [
-			{
-				"name": "domain",
-				"type": "domain"
-			},
-			{
-				"name": "path",
-				"type": "path",
-				"example": "/searx",
-				"default": "/searx"
-			},
-			{
-				"name": "is_public",
-				"type": "boolean",
+    },
+    "multi_instance": false,
+    "services": [
+        "nginx",
+        "uwsgi"
+    ],
+    "arguments": {
+        "install": [
+            {
+                "name": "domain",
+                "type": "domain"
+            },
+            {
+                "name": "path",
+                "type": "path",
+                "example": "/searx",
+                "default": "/searx"
+            },
+            {
+                "name": "is_public",
+                "type": "boolean",
                 "help": {
                     "en": "If enabled, Searx will be accessible by people who do not have an account. This can be changed later via the webadmin.",
                     "fr": "Si cette case est cochée, Searx sera accessible aux personnes n’ayant pas de compte. Vous pourrez changer ceci plus tard via la webadmin.",
                     "de": "Wenn aktiviert, ist Searx für Personen zugänglich, die kein Konto haben. Dies kann später über den Webadmin geändert werden"
                 },
-				"default": true
-			}
-		]
-	}
+                "default": true
+            }
+        ]
+    }
 }
