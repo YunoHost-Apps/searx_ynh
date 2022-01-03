@@ -13,7 +13,7 @@ Si vous n'avez pas YunoHost, regardez [ici](https://yunohost.org/#/install) pour
 
 Méta-moteur de recherche respectueux de la vie privée et bidouillable
 
-**Version incluse :** 1.0.0~ynh4
+**Version incluse :** v0.18.0~ynh1
 
 **Démo :** https://demo.yunohost.org/searx/
 
