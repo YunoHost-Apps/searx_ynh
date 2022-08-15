@@ -82,20 +82,8 @@ if [ "$upgrade_type" == "UPGRADE_APP" ]
 then
 	ynh_script_progression --message="Upgrading source files..." --weight=3
 
-	# Create a temporary directory
-	tmpdir="$(mktemp -d)"
-
-	# Backup the config file in the temp dir
-	cp -a "$final_path/searx/settings.yml" "$tmpdir/settings.yml"
-
 	# Download, check integrity, uncompress and patch the source from app.src
-	ynh_setup_source --dest_dir="$final_path"
-
-	# Copy the admin saved settings from tmp directory to final path
-	cp -a "$tmpdir/settings.yml" "$final_path/searx/settings.yml"
-
-	# Remove the tmp directory securely
-	ynh_secure_remove --file="$tmpdir"
+	ynh_setup_source --dest_dir="$final_path" --keep="searx/settings.yml"
 fi
 
 #=================================================
